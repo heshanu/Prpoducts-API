@@ -1,8 +1,11 @@
 package services
 
 import (
+	"fmt"
+
 	"github.com/heshanu/go-service/pkg/config"
 	"github.com/heshanu/go-service/pkg/models"
+	"github.com/heshanu/go-service/pkg/shared"
 	"gorm.io/gorm"
 )
 
@@ -30,6 +33,7 @@ func CreateProduct(book *models.Product) error {
 
 func GetBookProductById(id int64) (*models.Product, error) {
 	var product models.Product
+
 	db := config.GetDB()
 	if err := db.First(&product, id).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
@@ -83,4 +87,19 @@ func UpdateProductById(id int64, updatedFields *models.Product) error {
 	}
 
 	return nil
+}
+
+func SearchByKeyWord(productList []models.Product, keyWord string) ([]models.Product, error) {
+	if keyWord == "" {
+		fmt.Printf("Keyword Cannot null")
+		return []models.Product{}, fmt.Errorf("keyword cannoit be null")
+	}
+	db := config.GetDB()
+	if err := db.Find(&productList).Error; err != nil {
+		return []models.Product{}, err
+	}
+
+	searchResponse := shared.SearchBooksConcurrently(productList, keyWord)
+	return searchResponse, nil
+
 }
