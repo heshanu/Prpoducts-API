@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -154,6 +155,60 @@ func DeleteProductById(w http.ResponseWriter, r *http.Request) {
 	}
 
 	res, _ := json.Marshal(err)
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(res)
+}
+
+/*
+func SearchBookByKeyword(w http.ResponseWriter, request *http.Request) {
+	q := request.URL.Query().Get("q")
+
+	productList, err := services.GetAllProduct()
+
+	if err != nil {
+		http.Error(w, "Cannot get all products", http.StatusFound)
+	}
+
+	var result []models.Product
+	result, err = services.SearchByKeyWord(productList, q)
+
+	if err != nil {
+		http.Error(w, "Cannot get keyword related products", http.StatusFound)
+	}
+
+	res, _ := json.Marshal(result)
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(res)
+
+}*/
+
+func SearchBookByKeyword(w http.ResponseWriter, request *http.Request) {
+	q := request.URL.Query().Get("q")
+
+	productList, err := services.GetAllProduct()
+	if err != nil {
+		log.Println("Error fetching products:", err)
+		http.Error(w, "Cannot get all products", http.StatusInternalServerError)
+		return
+	}
+
+	result := shared.SearchBooksConcurrently(productList, q)
+	// if err != nil {
+	// 	log.Println("Error searching products by keyword:", err)
+	// 	http.Error(w, "Cannot get keyword related products", http.StatusInternalServerError)
+	// 	return
+	// }
+
+	res, err := json.Marshal(result)
+	if err != nil {
+		log.Println("Error marshaling JSON:", err)
+		http.Error(w, "Error processing request", http.StatusInternalServerError)
+		return
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
